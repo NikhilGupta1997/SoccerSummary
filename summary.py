@@ -3,12 +3,18 @@
 # 	Copyright : Nikhil Gupta & Ayush Bhardwaj	#
 #################################################
 
+
 import csv
+import sys
 
 text_data = {}
 # event_data = []
 meta_data = {}
 
+
+# Get match number to summarize
+# match_id = int(sys.argv[1])
+# print match_id
 
 def csv_dict_reader(file_obj):
 	reader = csv.DictReader(file_obj, delimiter=',')
