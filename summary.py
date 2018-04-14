@@ -3,57 +3,43 @@
 # 	Copyright : Nikhil Gupta & Ayush Bhardwaj	#
 #################################################
 
-
 import csv
 import sys
+import connect
 
-text_data = {}
-# event_data = []
-meta_data = {}
-
+# Connect to the PostGres Server
+cur = connect.connect()
 
 # Get match number to summarize
-# match_id = int(sys.argv[1])
-# print match_id
+search_type = int(sys.argv[1])
+if search_type == 1:
+	match_id = int(sys.argv[2])
+else:
+	team1 = (sys.argv[2])
+	team2 = (sys.argv[3])
+	# team1 = 'Manchester Utd'
+	# team2 = 'Manchester City'
 
-def csv_dict_reader(file_obj):
-	reader = csv.DictReader(file_obj, delimiter=',')
-	for line in reader:
-		if(line['id_odsp'] not in text_data):
-			text_data[line['id_odsp']] = [line]
-		else:
-			text_data[line['id_odsp']].append(line)			 
-		# event_data.append(int(line['event_type']))
+def to_str(string):
+	return '\'' + string + '\''
 
-def csv_meta_data(file_obj):
-	reader = csv.DictReader(file_obj, delimiter=',')
-	for line in reader:
-		meta_data[line['id_odsp']] = line
-	
-with open("./football-events/events.csv") as f_obj:
-	csv_dict_reader(f_obj)
-
-with open("./football-events/ginf.csv") as f_obj:
-	csv_meta_data(f_obj)
-
-# (Home team, Away team, Home Team Score, Away Team Score, odds_home, odds_draw, odds_against)
 def get_match_info(match_id):
-	info = meta_data[match_id]
-	# return (info['ht'], info['at'], info['fthg'], info['ftag'], info['odd_h'], info['odd_d'], info['odd_a'])
-	return info
-# returns (winner:(0:home/1:draw/2:away), expectation(0:expected, 1:close, 2:shock, 3:unbelievable) 
-# Add features like close match, high scoring
+	match_info = connect.query_one(cur, 'SELECT * FROM game_info WHERE id = 1;')
+	match_commentary = connect.query_mul(cur, 'SELECT * FROM events WHERE id_odsp = ' + to_str(match_info['id_odsp']))
+	return match_info, match_commentary	
+
+def get_match_info(team1, team2):
+	match_info = connect.query_one(cur, 'SELECT * FROM game_info WHERE ht = ' + to_str(team1) + ' AND at = ' + to_str(team2))
+	match_commentary = connect.query_mul(cur, 'SELECT * FROM events WHERE id_odsp = ' + to_str(match_info['id_odsp']))
+	return match_info, match_commentary	
 
 def winner(match_info):
 	win = 1 
 	expect = 0 
-	# print match_info
-	# print int(match_info['fthg']), int(match_info['ftag'])
 	if(int(match_info['fthg']) > int(match_info['ftag'])):
 		win = 0
 	elif(int(match_info['fthg']) < int(match_info['ftag'])):
 		win = 2	
-
 	odd_result = match_info['odd_a']
 	if(win == 0):
 		odd_result = float(match_info['odd_h'])
@@ -84,16 +70,23 @@ def start_line(match_info, match_commentary):
 		start_str = start_str + 'lost to '
 
 	start_str += match_info['at'] + ' '
-	start_str += match_info['fthg'] + '-'+ match_info['ftag'] + ' at their home ground.'
-
+	start_str += str(match_info['fthg']) + '-'+ str(match_info['ftag']) + ' at their home ground.'
 	return start_str
 
+def goal_scorer(match_commentary):
+	for row in match_commentary:
+		if row['is_goal']:
+			print(row['player'])
 
-match_info = get_match_info('UFot0hit/')
-match_commentary = meta_data['UFot0hit/']
-
-print match_info
+# print match_info
+if search_type == 1:
+	match_info, match_commentary = get_match_info(match_id)
+else:
+	match_info, match_commentary = get_match_info(team1, team2)
 print winner(match_info)
 print start_line(match_info, match_commentary)
+goal_scorer(match_commentary)
+
+
 
 

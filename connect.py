@@ -1,4 +1,5 @@
 import psycopg2
+import psycopg2.extras
 from config import config
  
 conn = None
@@ -14,7 +15,7 @@ def connect():
         conn = psycopg2.connect(**params)
  
         # create a cursor
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         
  # execute a statement
         print('PostgreSQL database version:')
@@ -34,9 +35,18 @@ def connect():
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
 
-def query(cur, qry):
+def query_one(cur, qry):
     cur.execute(qry)
-    return cur.fetchone()
+    data = cur.fetchone()
+    return dict(data)
+
+def query_mul(cur, qry):
+    cur.execute(qry)
+    data = cur.fetchall()
+    dict_data = []
+    for row in data:
+        dict_data.append(dict(row))
+    return dict_data
     
 def disconnect(cur):
     if conn is not None:
