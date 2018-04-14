@@ -52,6 +52,7 @@ def winner(match_info):
 	return (win, temp)	
 
 def match_details(match_info):
+	print(match_info['id_odsp'])
 	match_line = "Match between " + match_info['ht'] + ' and ' + match_info['at'] + ' in the ' + str(match_info['season']) + ' season of the ' + match_info['country'] + ' league, being played on ' + str(match_info['date'])
 	return match_line
 
@@ -110,16 +111,51 @@ def find_dominance(match_info, match_commentary):
 				away_attacks_count += 1	
 	return ans
 
+def toggle(team):
+	if team == 0: return 1
+	else: return 0
+
+def check_equal(goals):
+	if goals[0] == goals[1]: return True
+	else: return False
+
 def goal_scorer(match_commentary):
 	goal_scorer = {}
+	goal_line = ""
+	goals = [0,0]
 	for row in match_commentary:
 		if row['is_goal']:
 			print(row['player'])
+			print(row['time'])
+			team = int(row['side']) - 1
+			goals[team] += 1
+			other_team = toggle(team)
+			equilizer = check_equal(goals)
+			if row['time'] <= 10:
+				if goals[team] > goals[other_team]:
+					goal_line += row['player'] + " scored an quick goal to give " + row['event_team'] + " an early lead\n"
+				elif equilizer:
+					goal_line += row['player'] + " replied swiftly and strongly to get " + row['event_team'] + " the equilizer\n"
+			if row['time'] > 80:
+				if goals[team] > goals[other_team] + 1:
+					goal_line += row['player'] + " fortified the lead for " + row['event_team'] + " with a goal in the " + row['time'] + ' minute\n'
+				elif goals[team] > goals[other_team]:
+					goal_line += row['player'] + " secured the lead for " + row['event_team'] + " with a goal in the " + row['time'] + ' minute\n'
+				elif equilizer:
+					goal_line += row['player'] + " replied strongly to get " + row['event_team'] + " the much needed equilizer\n"
 			if row['player'] in goal_scorer:
 				goal_scorer[row['player']] += 1
 			else:
 				goal_scorer[row['player']] = 1
+			if goal_scorer[row['player']] > 1:
+				if goal_scorer[row['player']] == 2:
+					goal_line += row['player'] + " scored a strong brace\n"
+				elif goal_scorer[row['player']] == 3:
+					goal_line += row['player'] + " scored a strong hat-trick\n"
+				else:
+					goal_line += row['player'] + " scored an astounding " + str(goal_scorer[row['player']]) + ' goals!\n'
 	print(goal_scorer)
+	return goal_line
  
 
 # print match_info
@@ -130,7 +166,8 @@ else:
 print match_details(match_info)
 print winner(match_info)
 print start_line(match_info, match_commentary)
-goal_scorer(match_commentary)
+print find_dominance(match_info, match_commentary)
+print goal_scorer(match_commentary)
 
 
 
