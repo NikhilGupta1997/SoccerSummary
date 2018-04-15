@@ -11,7 +11,10 @@ import connect
 cur = connect.connect()
 
 # Get match number to summarize
-search_type = int(sys.argv[1])
+if len(sys.argv) == 1:
+	search_type = 2
+else:
+	search_type = int(sys.argv[1])
 if search_type == 1:
 	match_id = int(sys.argv[2])
 else:
@@ -93,9 +96,9 @@ def winner(match_info):
 	return (win, temp)	
 
 def match_details(match_info):
-	print(match_info['id_odsp'])
-	match_line = str(0) + ':' + "This match was between " + match_info['ht'] + ' and ' + match_info['at'] + ' in the ' + str(match_info['season']) + ' season of the ' + match_info['country'] + ' league and was played on ' + str(match_info['date'])
-	return match_line
+	# print(match_info['id_odsp'])
+	match_line = str(0) + ':' + "This match was between " + match_info['ht'] + ' and ' + match_info['at'] + ' in the ' + str(match_info['season']) + ' season of the ' + match_info['country'] + ' league and was played on ' + str(match_info['date'])  + '\n'
+	return [match_line]
 
 def start_line(match_info, match_commentary):
 	# 0,1 : $home_team beat/drew with/lost to $_away_team $score at their home ground 
@@ -116,13 +119,13 @@ def start_line(match_info, match_commentary):
 		start_str = start_str + 'lost to '
 
 	start_str += match_info['at'] + ' '
-	start_str += str(match_info['fthg']) + '-'+ str(match_info['ftag']) + ' at their home ground.'
-	return start_str
+	start_str += str(match_info['fthg']) + '-'+ str(match_info['ftag']) + ' at their home ground.\n'
+	return [start_str]
 
 def find_dominance(match_info, match_commentary):
 	attacking_opportunities = [1, 2, 8]
 	ans = []
-	print type(match_commentary), len(match_commentary)
+	# print type(match_commentary), len(match_commentary)
 	period_gap = 5
 	period_start = 0
 	dominance_diff = 2
@@ -132,16 +135,16 @@ def find_dominance(match_info, match_commentary):
 	
 	home_attacks_count = 0
 	away_attacks_count = 0
-	dominance_string = ""
+	dominance_string = []
 	for event in match_commentary:
 		if(int(event['time']) > (period_start + period_gap)):
 			prev_dominance = home_attacks_count - away_attacks_count
 			if(prev_dominance > dominance_diff):
 				ans.append((0, 0, period_start, period_start + period_gap))
-				dominance_string += str(period_start + period_gap) + ':' + home_team + ' have started to attack and are dominating the possession\n'
+				dominance_string.append(str(period_start + period_gap) + ':' + home_team + ' started to attack and dominated the possession\n')
 			if(prev_dominance < -1 * dominance_diff):
 				ans.append((1, 0, period_start, period_start + period_gap))	
-				dominance_string += str(period_start + period_gap) + ':' + away_team + ' have started to attack and are dominating the possession\n'
+				dominance_string.append(str(period_start + period_gap) + ':' + away_team + ' started to attack and dominated the possession\n')
 
 			period_start += period_gap
 			home_attacks_count = 0
@@ -152,8 +155,8 @@ def find_dominance(match_info, match_commentary):
 				home_attacks_count += 1
 			else:
 				away_attacks_count += 1	
-	print dominance_string
-	return ans
+	# print dominance_string
+	return dominance_string
 
 def toggle(team):
 	if team == 0: return 1
@@ -195,12 +198,12 @@ def description(player, player2, shot_place, shot_outcome, location, bodypart, a
 
 def goal_scorer(match_commentary):
 	goal_scorer = {}
-	goal_line = ""
+	goal_line = []
 	goals = [0,0]
 	for row in match_commentary:
 		if row['is_goal']:
-			print(row['player'])
-			print(row['time'])
+			# print(row['player'])
+			# print(row['time'])
 			team = int(row['side']) - 1
 			goals[team] += 1
 			other_team = toggle(team)
@@ -216,63 +219,90 @@ def goal_scorer(match_commentary):
 
 			if row['time'] <= 10:
 				if goals[team] > goals[other_team]:
-					goal_line += str(row['time']) + ':' + player + " scored an quick goal to give " + row['event_team'] + " an early lead\n"
-					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
+					goal_line.append(str(row['time']) + ':' + player + " scored an quick goal to give " + row['event_team'] + " an early lead\n")
+					goal_line.append(str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation))
 				elif equilizer:
-					goal_line += str(row['time']) + ':' + player + " replied swiftly and strongly to get " + row['event_team'] + " the equilizer\n"
-					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
+					goal_line.append(str(row['time']) + ':' + player + " replied swiftly and strongly to get " + row['event_team'] + " the equilizer\n")
+					goal_line.append(str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation))
 			elif row['time'] > 80:
 				if goals[team] > goals[other_team] + 1:
-					goal_line += str(row['time']) + ':' + player + " fortified the lead for " + row['event_team'] + " with a goal in the " + str(row['time']) + ' minute\n'
-					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
+					goal_line.append(str(row['time']) + ':' + player + " fortified the lead for " + row['event_team'] + " with a goal in the " + str(row['time']) + ' minute\n')
+					goal_line.append(str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation))
 				elif goals[team] > goals[other_team]:
-					goal_line += str(row['time']) + ':' + player + " secured the lead for " + row['event_team'] + " with a goal in the " + str(row['time']) + ' minute\n'
-					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
+					goal_line.append(str(row['time']) + ':' + player + " secured the lead for " + row['event_team'] + " with a goal in the " + str(row['time']) + ' minute\n')
+					goal_line.append(str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation))
 				elif equilizer:
-					goal_line += str(row['time']) + ':' + player + " replied strongly to get " + row['event_team'] + " the much needed equilizer in the final moments of the game\n"
-					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
+					goal_line.append(str(row['time']) + ':' + player + " replied strongly to get " + row['event_team'] + " the much needed equilizer in the final moments of the game\n")
+					goal_line.append(str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation))
 				else:
-					goal_line += str(row['time']) + ':' + player + " continued to fight with a goal for " + row['event_team'] + " in the final moments of the game\n"
-					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
+					goal_line.append(str(row['time']) + ':' + player + " continued to fight with a goal for " + row['event_team'] + " in the final moments of the game\n")
+					goal_line.append(str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation))
 			else:
 				if equilizer:
-					goal_line += str(row['time']) + ':' + player + " replied strongly to get " + row['event_team'] + " the much needed equilizer\n"
-					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
+					goal_line.append(str(row['time']) + ':' + player + " replied strongly to get " + row['event_team'] + " the much needed equilizer\n")
+					goal_line.append(str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation))
 				elif goals[team] > goals[other_team] + 1:
-					goal_line += str(row['time']) + ':' + player + " scored a goal in the " + str(row['time']) + ' minute to give ' + row['event_team'] + ' a fortified lead\n'
-					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
+					goal_line.append(str(row['time']) + ':' + player + " scored a goal in the " + str(row['time']) + ' minute to give ' + row['event_team'] + ' a fortified lead\n')
+					goal_line.append(str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation))
 				elif goals[team] > goals[other_team]:
-					goal_line += str(row['time']) + ':' + player + " scored a goal in the " + str(row['time']) + ' minute to give ' + row['event_team'] + ' the lead\n'
-					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
+					goal_line.append(str(row['time']) + ':' + player + " scored a goal in the " + str(row['time']) + ' minute to give ' + row['event_team'] + ' the lead\n')
+					goal_line.append(str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation))
 				else:
-					goal_line += str(row['time']) + ':' + player + " scored a goal in the " + str(row['time']) + ' minute\n'
-					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
+					goal_line.append(str(row['time']) + ':' + player + " scored a goal in the " + str(row['time']) + ' minute\n')
+					goal_line.append(str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation))
 			if player in goal_scorer:
 				goal_scorer[player] += 1
 			else:
 				goal_scorer[player] = 1
 			if goal_scorer[player] > 1:
 				if goal_scorer[player] == 2:
-					goal_line += str(row['time']) + ':' + player + " scored a strong brace\n"
+					goal_line.append(str(row['time']) + ':' + player + " scored a strong brace\n")
 				elif goal_scorer[player] == 3:
-					goal_line += str(row['time']) + ':' + player + " scored a strong hat-trick\n"
+					goal_line.append(str(row['time']) + ':' + player + " scored a strong hat-trick\n")
 				else:
-					goal_line += str(row['time']) + ':' + player + " scored an astounding " + str(goal_scorer[player]) + ' goals!\n'
-	print(goal_scorer)
+					goal_line.append(str(row['time']) + ':' + player + " scored an astounding " + str(goal_scorer[player]) + ' goals!\n')
+		elif row['location'] == 14:
+			goal_line.append(str(row['time']) + ':' + "Disappointingly, " + row['player'].title() + " missed the penalty which " + shot_place_dict[row['shot_place']] + "\n")
+	# print(goal_scorer)
 	return goal_line
  
+def foul_details(match_commentary):
+	foul_string = []
+	for event in match_commentary:
+		event_type = event['event_type']
+		player = event['player'].title()
+		player2 = event['player2'].title()
+		team = event['event_team']
+		if event_type == 4:
+			foul_string.append(str(event['time']) + ':' + player + " was given a yellow card\n")
+		elif event_type == 5:
+			foul_string.append(str(event['time']) + ':' + player + " was given a second yellow card and was a big blow to " + team + "\n")
+		elif event_type == 6:
+			foul_string.append(str(event['time']) + ':' + player + " was given a red card and left " + team + " with a 10 man side\n")
+		elif event_type == 11:
+			foul_string.append(str(event['time']) + ':' + re.sub('(.*?)', '', event['text']) + "\n")
+	return foul_string
+
+def subsitutions(match_commentary):
+	pass
+
+def sort_time(timeline):
+	timeline = [(x.split(':')[0], x.split(':')[1]) for x in timeline]
+	timeline.sort(key=lambda x: x[0])
+	return timeline
 
 # print match_info
 if search_type == 1:
 	match_info, match_commentary = get_match_info(match_id)
 else:
 	match_info, match_commentary = get_match_info(team1, team2)
-print match_details(match_info)
-print winner(match_info)
-print start_line(match_info, match_commentary)
-print find_dominance(match_info, match_commentary)
-print goal_scorer(match_commentary)
-
-
-
-
+timeline = []
+timeline += match_details(match_info)
+# print winner(match_info)
+timeline += start_line(match_info, match_commentary)
+timeline += find_dominance(match_info, match_commentary)
+timeline += goal_scorer(match_commentary)
+timeline += foul_details(match_commentary)
+timeline = sort_time(timeline)
+for row in timeline:
+	print row
