@@ -287,9 +287,15 @@ def subsitutions(match_commentary):
 	pass
 
 def sort_time(timeline):
-	timeline = [(x.split(':')[0], x.split(':')[1]) for x in timeline]
+	timeline = [(int(x.split(':')[0]), x.split(':')[1]) for x in timeline]
 	timeline.sort(key=lambda x: x[0])
 	return timeline
+
+def summarize(timeline):
+	text = ""
+	for row in timeline:
+		text += row[1]
+	return text
 
 # print match_info
 if search_type == 1:
@@ -304,5 +310,4 @@ timeline += find_dominance(match_info, match_commentary)
 timeline += goal_scorer(match_commentary)
 timeline += foul_details(match_commentary)
 timeline = sort_time(timeline)
-for row in timeline:
-	print row
+print summarize(timeline)
