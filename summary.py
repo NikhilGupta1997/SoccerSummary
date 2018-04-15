@@ -20,6 +20,47 @@ else:
 	team1 = 'Manchester Utd'
 	team2 = 'Manchester City'
 
+location_dict = {
+	1	:	"the attacking half",
+	2	:	"the defensive half",
+	3	:	"the centre of the box",
+	4	:	"the left wing",
+	5	:	"the right wing",
+	6	:	"a difficult angle from long range",
+	7	:	"a difficult angle on the left",
+	8	:	"a difficult angle on the right",
+	9	:	"the left side of the box",
+	10	:	"the left side of the six yard box",
+	11	:	"the right side of the box",
+	12	:	"the right side of the six yard box",
+	13	:	"very close range",
+	14	:	"the penalty spot",
+	15	:	"outside the box",
+	16	:	"long range",
+	17	:	"more than 35 yards",
+	18	:	"more than 40 yards",
+	19	:	"not recorded"}
+
+bodypart_dict = {
+	1	:	"right foot",
+	2	:	"left foot",
+	3	:	"head"}
+
+shot_place_dict = {
+	1	:	"Bit too high",
+	2	:	"Blocked",
+	3	:	"Bottom left corner",
+	4	:	"Bottom right corner",
+	5	:	"Centre of the goal",
+	6	:	"High and wide",
+	7	:	"Hits the bar",
+	8	:	"Misses to the left",
+	9	:	"Misses to the right",
+	10	:	"Too high",
+	11	:	"Top centre of the goal",
+	12	:	"Top left corner",
+	13	:	"Top right corner"}
+
 def to_str(string):
 	return '\'' + string + '\''
 
@@ -53,7 +94,7 @@ def winner(match_info):
 
 def match_details(match_info):
 	print(match_info['id_odsp'])
-	match_line = "Match between " + match_info['ht'] + ' and ' + match_info['at'] + ' in the ' + str(match_info['season']) + ' season of the ' + match_info['country'] + ' league, being played on ' + str(match_info['date'])
+	match_line = str(0) + ':' + "This match was between " + match_info['ht'] + ' and ' + match_info['at'] + ' in the ' + str(match_info['season']) + ' season of the ' + match_info['country'] + ' league and was played on ' + str(match_info['date'])
 	return match_line
 
 def start_line(match_info, match_commentary):
@@ -62,7 +103,7 @@ def start_line(match_info, match_commentary):
 	# TODO : Add features like <players winner/hattrick inspires late comeback etc>. This can include brace, or if keeper does too many saves etc
 	
 	(win, odds) = winner(match_info)
-	start_str = match_info['ht'] + ' ' 
+	start_str = str(0) + ':' + match_info['ht'] + ' ' 
 
 	if(odds > 2):
 		start_str = 'unexpectedly '
@@ -91,14 +132,16 @@ def find_dominance(match_info, match_commentary):
 	
 	home_attacks_count = 0
 	away_attacks_count = 0
-
+	dominance_string = ""
 	for event in match_commentary:
 		if(int(event['time']) > (period_start + period_gap)):
 			prev_dominance = home_attacks_count - away_attacks_count
 			if(prev_dominance > dominance_diff):
 				ans.append((0, 0, period_start, period_start + period_gap))
+				dominance_string += str(period_start + period_gap) + ':' + home_team + ' have started to attack and are dominating the possession\n'
 			if(prev_dominance < -1 * dominance_diff):
 				ans.append((1, 0, period_start, period_start + period_gap))	
+				dominance_string += str(period_start + period_gap) + ':' + away_team + ' have started to attack and are dominating the possession\n'
 
 			period_start += period_gap
 			home_attacks_count = 0
@@ -109,6 +152,7 @@ def find_dominance(match_info, match_commentary):
 				home_attacks_count += 1
 			else:
 				away_attacks_count += 1	
+	print dominance_string
 	return ans
 
 def toggle(team):
@@ -118,6 +162,36 @@ def toggle(team):
 def check_equal(goals):
 	if goals[0] == goals[1]: return True
 	else: return False
+
+def assist_desc(player2, assist_method):
+	assist = ""
+	if assist_method == 1:
+		assist += "A great assist provided by " + player2 + " with a pass."
+	elif assist_method == 2:
+		assist += "A brilliant assist provided by " + player2 + " with a great cross into the box."
+	elif assist_method == 3:
+		assist += "A great assist provided by " + player2 + " with a headed pass."
+	elif assist_method == 4:
+		assist += "A brilliant assist provided by " + player2 + " with a perfectly placed through ball into the box."
+	return assist
+
+def goal_desc(player, shot_place, shot_outcome, location, bodypart, situation):
+	goal = ""
+	if situation == 3:
+		goal += "The corner is converted! "
+	elif situation == 4:
+		goal += "The free kick is converted! "
+	goal += player + " took the shot from " + location_dict[location] + " with his " + bodypart_dict[bodypart] + " and sent the ball flying into the " + shot_place_dict[shot_place]
+	return goal
+
+def description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation):
+	desc_line = ""
+	if location == 14:
+		desc_line += player + " converted the penalty and sent the ball flying into the " + shot_place_dict[shot_place]
+	else:
+		desc_line += assist_desc(player2, assist_method)
+		desc_line += " " + goal_desc(player, shot_place, shot_outcome, location, bodypart, situation)
+	return desc_line + '\n'
 
 def goal_scorer(match_commentary):
 	goal_scorer = {}
@@ -131,29 +205,59 @@ def goal_scorer(match_commentary):
 			goals[team] += 1
 			other_team = toggle(team)
 			equilizer = check_equal(goals)
+			player = row['player'].title()
+			player2 = row['player2'].title()
+			shot_place = row['shot_place']
+			shot_outcome = row['shot_outcome']
+			location = row['location']
+			bodypart = row['bodypart']
+			assist_method = row['assist_method']
+			situation = row['situation']
+
 			if row['time'] <= 10:
 				if goals[team] > goals[other_team]:
-					goal_line += row['player'] + " scored an quick goal to give " + row['event_team'] + " an early lead\n"
+					goal_line += str(row['time']) + ':' + player + " scored an quick goal to give " + row['event_team'] + " an early lead\n"
+					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
 				elif equilizer:
-					goal_line += row['player'] + " replied swiftly and strongly to get " + row['event_team'] + " the equilizer\n"
-			if row['time'] > 80:
+					goal_line += str(row['time']) + ':' + player + " replied swiftly and strongly to get " + row['event_team'] + " the equilizer\n"
+					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
+			elif row['time'] > 80:
 				if goals[team] > goals[other_team] + 1:
-					goal_line += row['player'] + " fortified the lead for " + row['event_team'] + " with a goal in the " + row['time'] + ' minute\n'
+					goal_line += str(row['time']) + ':' + player + " fortified the lead for " + row['event_team'] + " with a goal in the " + str(row['time']) + ' minute\n'
+					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
 				elif goals[team] > goals[other_team]:
-					goal_line += row['player'] + " secured the lead for " + row['event_team'] + " with a goal in the " + row['time'] + ' minute\n'
+					goal_line += str(row['time']) + ':' + player + " secured the lead for " + row['event_team'] + " with a goal in the " + str(row['time']) + ' minute\n'
+					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
 				elif equilizer:
-					goal_line += row['player'] + " replied strongly to get " + row['event_team'] + " the much needed equilizer\n"
-			if row['player'] in goal_scorer:
-				goal_scorer[row['player']] += 1
-			else:
-				goal_scorer[row['player']] = 1
-			if goal_scorer[row['player']] > 1:
-				if goal_scorer[row['player']] == 2:
-					goal_line += row['player'] + " scored a strong brace\n"
-				elif goal_scorer[row['player']] == 3:
-					goal_line += row['player'] + " scored a strong hat-trick\n"
+					goal_line += str(row['time']) + ':' + player + " replied strongly to get " + row['event_team'] + " the much needed equilizer in the final moments of the game\n"
+					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
 				else:
-					goal_line += row['player'] + " scored an astounding " + str(goal_scorer[row['player']]) + ' goals!\n'
+					goal_line += str(row['time']) + ':' + player + " continued to fight with a goal for " + row['event_team'] + " in the final moments of the game\n"
+					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
+			else:
+				if equilizer:
+					goal_line += str(row['time']) + ':' + player + " replied strongly to get " + row['event_team'] + " the much needed equilizer\n"
+					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
+				elif goals[team] > goals[other_team] + 1:
+					goal_line += str(row['time']) + ':' + player + " scored a goal in the " + str(row['time']) + ' minute to give ' + row['event_team'] + ' a fortified lead\n'
+					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
+				elif goals[team] > goals[other_team]:
+					goal_line += str(row['time']) + ':' + player + " scored a goal in the " + str(row['time']) + ' minute to give ' + row['event_team'] + ' the lead\n'
+					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
+				else:
+					goal_line += str(row['time']) + ':' + player + " scored a goal in the " + str(row['time']) + ' minute\n'
+					goal_line += str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
+			if player in goal_scorer:
+				goal_scorer[player] += 1
+			else:
+				goal_scorer[player] = 1
+			if goal_scorer[player] > 1:
+				if goal_scorer[player] == 2:
+					goal_line += str(row['time']) + ':' + player + " scored a strong brace\n"
+				elif goal_scorer[player] == 3:
+					goal_line += str(row['time']) + ':' + player + " scored a strong hat-trick\n"
+				else:
+					goal_line += str(row['time']) + ':' + player + " scored an astounding " + str(goal_scorer[player]) + ' goals!\n'
 	print(goal_scorer)
 	return goal_line
  
