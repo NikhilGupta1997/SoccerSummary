@@ -11,19 +11,19 @@ def connect():
         params = config()
  
         # connect to the PostgreSQL server
-        print('Connecting to the PostgreSQL database...')
+        # print('Connecting to the PostgreSQL database...')
         conn = psycopg2.connect(**params)
  
         # create a cursor
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         
  # execute a statement
-        print('PostgreSQL database version:')
+        # print('PostgreSQL database version:')
         cur.execute('SELECT version()')
  
         # display the PostgreSQL database server version
-        db_version = cur.fetchone()
-        print(db_version)
+        # db_version = cur.fetchone()
+        # print(db_version)
 
         return cur
      #    cur.execute('SELECT count(*) FROM game_info')

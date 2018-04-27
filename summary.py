@@ -11,17 +11,21 @@ import connect
 cur = connect.connect()
 
 # Get match number to summarize
-if len(sys.argv) == 1:
+if len(sys.argv) == 2:
+	search_type = 1
+else:
 	search_type = 2
-else:
-	search_type = int(sys.argv[1])
 if search_type == 1:
-	match_id = int(sys.argv[2])
+	match_id = int(sys.argv[1])
 else:
-	# team1 = (sys.argv[2])
-	# team2 = (sys.argv[3])
-	team1 = 'Manchester Utd'
-	team2 = 'Manchester City'
+	team1 = (sys.argv[1])
+	team2 = (sys.argv[2])
+	season = (sys.argv[3])
+	print(team1)
+	print(team2)
+	print(season)
+	# team1 = 'Liverpool'
+	# team2 = 'Manchester City'
 
 location_dict = {
 	1	:	"the attacking half",
@@ -72,8 +76,8 @@ def get_match_info(match_id):
 	match_commentary = connect.query_mul(cur, 'SELECT * FROM events WHERE id_odsp = ' + to_str(match_info['id_odsp']))
 	return match_info, match_commentary	
 
-def get_match_info(team1, team2):
-	match_info = connect.query_one(cur, 'SELECT * FROM game_info WHERE ht = ' + to_str(team1) + ' AND at = ' + to_str(team2))
+def get_match_info(team1, team2, season):
+	match_info = connect.query_one(cur, 'SELECT * FROM game_info WHERE ht = ' + to_str(team1) + ' AND at = ' + to_str(team2) + ' AND season = ' + season)
 	match_commentary = connect.query_mul(cur, 'SELECT * FROM events WHERE id_odsp = ' + to_str(match_info['id_odsp']))
 	return match_info, match_commentary	
 
@@ -109,14 +113,14 @@ def start_line(match_info, match_commentary):
 	start_str = str(0) + ':' + match_info['ht'] + ' ' 
 
 	if(odds > 2):
-		start_str = 'unexpectedly '
+		start_str += 'unexpectedly '
 
 	if(win == 0):
-		start_str = start_str + 'defeated '
+		start_str += 'defeated '
 	elif(win == 1):
-		start_str = start_str + 'drew with '
+		start_str += 'drew with '
 	else:
-		start_str = start_str + 'lost to '
+		start_str += 'lost to '
 
 	start_str += match_info['at'] + ' '
 	start_str += str(match_info['fthg']) + '-'+ str(match_info['ftag']) + ' at their home ground.\n'
@@ -181,10 +185,13 @@ def assist_desc(player2, assist_method):
 def goal_desc(player, shot_place, shot_outcome, location, bodypart, situation):
 	goal = ""
 	if situation == 3:
-		goal += "The corner is converted! "
+		goal += "The corner was converted! "
 	elif situation == 4:
-		goal += "The free kick is converted! "
-	goal += player + " took the shot from " + location_dict[location] + " with his " + bodypart_dict[bodypart] + " and sent the ball flying into the " + shot_place_dict[shot_place]
+		goal += "The free kick was converted! "
+	if shot_place == -1:
+		goal += 'Embarassingly, ' + player + ' scored an unlucky own goal'
+	else:
+		goal += player + " took the shot from " + location_dict[location] + " with his " + bodypart_dict[bodypart] + " and sent the ball flying into the " + shot_place_dict[shot_place]
 	return goal
 
 def description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation):
@@ -284,7 +291,14 @@ def foul_details(match_commentary):
 	return foul_string
 
 def subsitutions(match_commentary):
-	pass
+	subs = []
+	for event in match_commentary:
+		event_type = event['event_type']
+		player_in = event['player_in'].title()
+		player_out = event['player_out'].title()
+		if event_type == 7:
+			subs.append(str(event['time']) + ':' + player_in + " was substituted in place of " + player_out + "\n")
+	return subs
 
 def sort_time(timeline):
 	timeline = [(int(x.split(':')[0]), x.split(':')[1]) for x in timeline]
@@ -301,7 +315,7 @@ def summarize(timeline):
 if search_type == 1:
 	match_info, match_commentary = get_match_info(match_id)
 else:
-	match_info, match_commentary = get_match_info(team1, team2)
+	match_info, match_commentary = get_match_info(team1, team2, season)
 timeline = []
 timeline += match_details(match_info)
 # print winner(match_info)
@@ -309,5 +323,7 @@ timeline += start_line(match_info, match_commentary)
 timeline += find_dominance(match_info, match_commentary)
 timeline += goal_scorer(match_commentary)
 timeline += foul_details(match_commentary)
+timeline += subsitutions(match_commentary)
 timeline = sort_time(timeline)
-print summarize(timeline)
+print(summarize(timeline))
+print("Summarization Over")
