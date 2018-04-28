@@ -17,9 +17,18 @@ team1 = (sys.argv[1])
 team2 = (sys.argv[2])
 season = (sys.argv[3])
 
-# print match_info
-match_info, match_commentary = final_summary_help.get_match_info(team1, team2, season)
+def to_str(string):
+	return '\'' + string + '\''
 
+def get_match_info(team1, team2, season):
+	# global connect
+	match_info = connect.query_one(cur, 'SELECT * FROM game_info WHERE ht = ' + to_str(team1) + ' AND at = ' + to_str(team2) + ' AND season = ' + season)
+	match_commentary = connect.query_mul(cur, ('SELECT * FROM events WHERE id_odsp = ' + to_str(match_info['id_odsp']) + ' ORDER BY sort_order ' ))
+	return match_info, match_commentary	
+
+# print match_info
+match_info, match_commentary = get_match_info(team1, team2, season)
+final_summary_help.stats(match_commentary, match_info)
 timeline = []
 timeline += final_summary_help.match_details(match_info)
 # print winner(match_info)

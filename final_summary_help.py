@@ -116,16 +116,6 @@ def stats(match_commentary, match_info):
 				subsitutions_away_in.append(player_in)
 				subsitutions_away_out.append(player_out)
 
-
-def to_str(string):
-	return '\'' + string + '\''
-
-def get_match_info(team1, team2, season):
-	# global connect
-	match_info = connect.query_one(cur, 'SELECT * FROM game_info WHERE ht = ' + to_str(team1) + ' AND at = ' + to_str(team2) + ' AND season = ' + season)
-	match_commentary = connect.query_mul(cur, ('SELECT * FROM events WHERE id_odsp = ' + to_str(match_info['id_odsp']) + ' ORDER BY sort_order ' ))
-	return match_info, match_commentary	
-
 def winner(match_info):
 	win = 1 
 	expect = 0 

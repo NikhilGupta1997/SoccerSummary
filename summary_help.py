@@ -42,19 +42,6 @@ shot_place_dict = {
 	12	:	"Top left corner",
 	13	:	"Top right corner"}
 
-def to_str(string):
-	return '\'' + string + '\''
-
-def get_match_info(match_id):
-	match_info = connect.query_one(cur, 'SELECT * FROM game_info WHERE id = 1;')
-	match_commentary = connect.query_mul(cur, 'SELECT * FROM events WHERE id_odsp = ' + to_str(match_info['id_odsp']))
-	return match_info, match_commentary	
-
-def get_match_info(team1, team2, season):
-	match_info = connect.query_one(cur, 'SELECT * FROM game_info WHERE ht = ' + to_str(team1) + ' AND at = ' + to_str(team2) + ' AND season = ' + season)
-	match_commentary = connect.query_mul(cur, 'SELECT * FROM events WHERE id_odsp = ' + to_str(match_info['id_odsp']))
-	return match_info, match_commentary	
-
 def winner(match_info):
 	win = 1 
 	expect = 0 
