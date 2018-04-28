@@ -121,6 +121,7 @@ def to_str(string):
 	return '\'' + string + '\''
 
 def get_match_info(team1, team2, season):
+	# global connect
 	match_info = connect.query_one(cur, 'SELECT * FROM game_info WHERE ht = ' + to_str(team1) + ' AND at = ' + to_str(team2) + ' AND season = ' + season)
 	match_commentary = connect.query_mul(cur, ('SELECT * FROM events WHERE id_odsp = ' + to_str(match_info['id_odsp']) + ' ORDER BY sort_order ' ))
 	return match_info, match_commentary	
@@ -253,14 +254,20 @@ def find_dominance(match_info, match_commentary):
 			elif(event[0] > 0):
 				dominance_string.append(str(event[1]) + ':' + home_team + ' started to dominate the game and were rewarded with a goal as')
 			else:
-				dominance_string.append(str(period_start) + ':' + home_team + ' started to attack and dominated the possession\n')	
+				if(event[4] == 90):
+					dominance_string.append(str(period_start) + ':' + home_team + ' dominated the last part of the match till the final whistle blew\n')
+				else:		
+					dominance_string.append(str(period_start) + ':' + home_team + ' started to attack and dominated the possession\n')	
 		else:
 			if(event[0] < 0):
 				dominance_string.append(str(event[1]) + ':' + away_team + ' started to attack and dominated the possession but ' + home_team + 'scored against the run of play as')
 			elif(event[0] > 0):
 				dominance_string.append(str(event[1]) + ':' + away_team + ' started to dominate the game and were rewarded with a goal as')
 			else:
-				dominance_string.append(str(event[4]) + ':' + away_team + ' started to attack and dominated the possession\n')
+				if(event[4] == 90):
+					dominance_string.append(str(event[4]) + ':' + away_team + ' dominated the last part of the match till the final whistle blew\n')
+				else:
+					dominance_string.append(str(event[4]) + ':' + away_team + ' started to attack and dominated the possession\n')
 		if(i+1 < len(ans)):
 			if(ans[i+1][2] == event[2]):
 				i += 1
@@ -384,7 +391,7 @@ def goal_scorer(match_commentary):
 				if goals[team] > goals[other_team] + 1:
 					if(num_goal == 0):
 						goal_line.append(str(row['time']) + ':' + player + " increased the lead for " + row['event_team'] + " with a goal in the " + str(row['time']) + ' minute\n')
-					if(num_goal == 2):
+					elif(num_goal == 2):
 						goal_line.append(str(row['time']) + ':' + player + " completed his hattrick for " + row['event_team'] + " by scoring in the " + str(row['time']) + ' minute\n')
 					else:
 						goal_line.append(str(row['time']) + ':' + player + " increased the lead for " + row['event_team'] + " with another goal in the " + str(row['time']) + ' minute\n')
@@ -394,7 +401,7 @@ def goal_scorer(match_commentary):
 				elif goals[team] > goals[other_team]:
 					if(num_goal == 0):
 						goal_line.append(str(row['time']) + ':' + player + " secured the lead for " + row['event_team'] + " with a goal in the " + str(row['time']) + ' minute\n')
-					if(num_goal == 2):
+					elif(num_goal == 2):
 						goal_line.append(str(row['time']) + ':' + player + " completed his hattrick for " + row['event_team'] + " by scoring in the " + str(row['time']) + ' minute\n')
 					else:
 						goal_line.append(str(row['time']) + ':' + player + " gained the lead for " + row['event_team'] + " with another goal in the " + str(row['time']) + ' minute\n')
@@ -433,7 +440,7 @@ def goal_scorer(match_commentary):
 				elif goals[team] > goals[other_team] + 1:
 					if(num_goal == 0):
 						goal_line.append(str(row['time']) + ':' + player + " scored in the " + str(row['time']) + ' minute to increase the lead for ' + row['event_team'] + '\n')
-					if(num_goal == 2):
+					elif(num_goal == 2):
 						goal_line.append(str(row['time']) + ':' + player + " completed his hattrick in the " + str(row['time']) + ' minute to increase the lead for ' + row['event_team'] + '\n')
 					else:
 						goal_line.append(str(row['time']) + ':' + player + " scored again in the " + str(row['time']) + ' minute to increase the lead for ' + row['event_team'] + '\n')
