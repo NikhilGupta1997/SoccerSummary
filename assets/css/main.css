@@ -3570,6 +3570,8 @@
 
 		#main table tbody tr {
 			border-color: #dddddd;
+			color: #636363;
+			line-height: 14px;
 		}
 
 			#main table tbody tr:nth-child(2n + 1) {
@@ -3577,7 +3579,8 @@
 			}
 
 		#main table th {
-			color: #636363;
+			color: #8275A5;
+			line-height: 22px;
 		}
 
 		#main table thead {
