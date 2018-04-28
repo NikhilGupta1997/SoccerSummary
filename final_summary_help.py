@@ -159,8 +159,10 @@ def start_line(match_info, match_commentary):
 	start_str += str(match_info['fthg']) + '-'+ str(match_info['ftag']) + ' at their home ground'
 	if(match_info['fthg'] + match_info['ftag'] >= 5):
 		start_str += " in a high-scoring contest"
-	if(match_info['fthg'] + match_info['ftag'] == 0):
+	elif(match_info['fthg'] + match_info['ftag'] == 0):
 		start_str += " in a dull draw"
+	elif(abs(match_info['fthg'] - match_info['ftag']) > 3):
+		start_str += " in an one-sided contest"
 	start_str += ".\n"	
 	return [start_str]
 
@@ -169,7 +171,7 @@ def find_dominance(match_info, match_commentary):
 
 	attacking_opportunities = [1, 2, 8]
 	ans = []
-	# print type(match_commentary), len(match_commentary)
+	
 	period_gap = 10
 	period_start = 0
 	dominance_diff = 3
@@ -183,22 +185,28 @@ def find_dominance(match_info, match_commentary):
 	goal_scored = 0
 	goal_hm_time = []
 	goal_aw_time = []
+	
 	for event in match_commentary:
+	
 		if(int(event['time']) > (period_start + period_gap)):
+
+			while(int(event['time']) > (period_start + 2*period_gap)):
+				period_start += period_gap
+			
 			prev_dominance = home_attacks_count - away_attacks_count
 			if(prev_dominance > dominance_diff):
 				goal_impact = 0
 				goal_time = -1
 				if(goal_scored > 0):
-					# print "yo"
 					goal_impact = 1
 					goal_time = goal_hm_time[0]
+
 				if(goal_scored < 0):
 					goal_impact = -1
 					goal_time = goal_aw_time[0]	
 
 				ans.append((goal_impact, goal_time, 0, 0, period_start, period_start + period_gap))
-				# dominance_string.append(str(period_start + period_gap) + ':' + home_team + ' started to attack and dominated the possession\n')
+
 			if(prev_dominance < -1 * dominance_diff):
 				goal_impact = 0
 				goal_time = -1
@@ -235,32 +243,38 @@ def find_dominance(match_info, match_commentary):
 			else:
 				away_attacks_count += 1	
 
+	flag = False	
 	for i in range(len(ans)):
 		event = ans[i]
 		ev_str = ""
-		if(event[2] == 0):
+
+ 		if flag:
+ 			flag = False
+ 			continue
+
+ 		if(event[2] == 0):
 			if(event[0] < 0):
 				dominance_string.append(str(event[1]) + ':' + home_team + ' started to attack and dominated the possession but ' + away_team + 'scored against the run of play as ')
 			elif(event[0] > 0):
 				dominance_string.append(str(event[1]) + ':' + home_team + ' started to dominate the game and were rewarded with a goal as')
 			else:
 				if(event[4] == 90):
-					dominance_string.append(str(period_start) + ':' + home_team + ' dominated the last part of the match till the final whistle blew\n')
-				else:		
-					dominance_string.append(str(period_start) + ':' + home_team + ' started to attack and dominated the possession\n')	
+					dominance_string.append(str(event[4]) + ':' + home_team + ' dominated the last part of the match till the final whistle blew\n')
+				else:
+					dominance_string.append(str(event[4]) + ':' + home_team + ' started to attack and dominated the possession\n')	
 		else:
 			if(event[0] < 0):
 				dominance_string.append(str(event[1]) + ':' + away_team + ' started to attack and dominated the possession but ' + home_team + 'scored against the run of play as')
 			elif(event[0] > 0):
 				dominance_string.append(str(event[1]) + ':' + away_team + ' started to dominate the game and were rewarded with a goal as')
 			else:
-				if(event[4] == 90):
+				if(int(event[4]) == 90):
 					dominance_string.append(str(event[4]) + ':' + away_team + ' dominated the last part of the match till the final whistle blew\n')
 				else:
 					dominance_string.append(str(event[4]) + ':' + away_team + ' started to attack and dominated the possession\n')
 		if(i+1 < len(ans)):
 			if(ans[i+1][2] == event[2]):
-				i += 1
+				flag = True
 	return dominance_string
 
 def toggle(team):
@@ -370,49 +384,49 @@ def goal_scorer(match_commentary):
 			num_goal = goal_num(player, row['time'], team)
 			if row['time'] <= 10:
 				if goals[team] > goals[other_team]:
-					goal_line.append(str(row['time']) + ':' + player + " scored an quick goal to give " + row['event_team'] + " an early lead\n")
+					goal_line.append(str(row['time']) + ':' + player + " scored an quick goal to give " + row['event_team'] + " an early lead.\n")
 					
 				elif equilizer:
 					goal_line.append(str(row['time']) + ':' + player + " replied swiftly and strongly to get " + row['event_team'] + " the equilizer in the " + str(row['time']) + ' minute.\n')
 					goal_line.append(str(row['time']) + ':' + desc_goal)
 			elif (row['time'] > 45 and goals[team] + goals[other_team] == 1):
-				goal_line.append(str(row['time']) + ':' + player + " finally broke the deadlock by scoring for " + row['event_team'] + " in the " + str(row['time']) + ' minute\n')
+				goal_line.append(str(row['time']) + ':' + player + " finally broke the deadlock by scoring for " + row['event_team'] + " in the " + str(row['time']) + ' minute.\n')
 			elif row['time'] > 80:
 				if goals[team] > goals[other_team] + 1:
 					if(num_goal == 0):
-						goal_line.append(str(row['time']) + ':' + player + " increased the lead for " + row['event_team'] + " with a goal in the " + str(row['time']) + ' minute\n')
+						goal_line.append(str(row['time']) + ':' + player + " increased the lead for " + row['event_team'] + " with a goal in the " + str(row['time']) + ' minute.\n')
 					elif(num_goal == 2):
-						goal_line.append(str(row['time']) + ':' + player + " completed his hattrick for " + row['event_team'] + " by scoring in the " + str(row['time']) + ' minute\n')
+						goal_line.append(str(row['time']) + ':' + player + " completed his hattrick for " + row['event_team'] + " by scoring in the " + str(row['time']) + ' minute.\n')
 					else:
-						goal_line.append(str(row['time']) + ':' + player + " increased the lead for " + row['event_team'] + " with another goal in the " + str(row['time']) + ' minute\n')
+						goal_line.append(str(row['time']) + ':' + player + " increased the lead for " + row['event_team'] + " with another goal in the " + str(row['time']) + ' minute.\n')
 	
 
 
 				elif goals[team] > goals[other_team]:
 					if(num_goal == 0):
-						goal_line.append(str(row['time']) + ':' + player + " secured the lead for " + row['event_team'] + " with a goal in the " + str(row['time']) + ' minute\n')
+						goal_line.append(str(row['time']) + ':' + player + " secured the lead for " + row['event_team'] + " with a goal in the " + str(row['time']) + ' minute.\n')
 					elif(num_goal == 2):
-						goal_line.append(str(row['time']) + ':' + player + " completed his hattrick for " + row['event_team'] + " by scoring in the " + str(row['time']) + ' minute\n')
+						goal_line.append(str(row['time']) + ':' + player + " completed his hattrick for " + row['event_team'] + " by scoring in the " + str(row['time']) + ' minute.\n')
 					else:
-						goal_line.append(str(row['time']) + ':' + player + " gained the lead for " + row['event_team'] + " with another goal in the " + str(row['time']) + ' minute\n')
+						goal_line.append(str(row['time']) + ':' + player + " gained the lead for " + row['event_team'] + " with another goal in the " + str(row['time']) + ' minute.\n')
 		
 					
 				elif equilizer:
 					if(eq_num[team] > 1):
 						if(num_goal == 2):
-							goal_line.append(str(row['time']) + ':' + player + " completed his hattrick to equalise again for "+ row['event_team'] +" in the final moments of the game\n")			
+							goal_line.append(str(row['time']) + ':' + player + " completed his hattrick to equalise again for "+ row['event_team'] +" in the final moments of the game.\n")			
 						else:	
-							goal_line.append(str(row['time']) + ':' + player + " scored for " + row['event_team'] + " to equalise again in the final moments of the game\n")
+							goal_line.append(str(row['time']) + ':' + player + " scored for " + row['event_team'] + " to equalise again in the final moments of the game.\n")
 					else:	
 						if(num_goal == 2):
-							goal_line.append(str(row['time']) + ':' + player + " completed his hattrick to get " + row['event_team'] + " the much needed equilizer in the final moments of the game\n")
+							goal_line.append(str(row['time']) + ':' + player + " completed his hattrick to get " + row['event_team'] + " the much needed equilizer in the final moments of the game.\n")
 						else:	
-							goal_line.append(str(row['time']) + ':' + player + " replied strongly to get " + row['event_team'] + " the much needed equilizer in the final moments of the game\n")
+							goal_line.append(str(row['time']) + ':' + player + " replied strongly to get " + row['event_team'] + " the much needed equilizer in the final moments of the game.\n")
 				else:
 					if(num_goal == 2):
-						goal_line.append(str(row['time']) + ':' + player + " continued the fightback with his 3rd goal for " + row['event_team'] + " in the final moments of the game\n")
+						goal_line.append(str(row['time']) + ':' + player + " continued the fightback with his 3rd goal for " + row['event_team'] + " in the final moments of the game.\n")
 					else:	
-						goal_line.append(str(row['time']) + ':' + player + " continued the fightback with a goal for " + row['event_team'] + " in the final moments of the game\n")
+						goal_line.append(str(row['time']) + ':' + player + " continued the fightback with a goal for " + row['event_team'] + " in the final moments of the game.\n")
 
 			else:
 				if equilizer:
@@ -429,28 +443,28 @@ def goal_scorer(match_commentary):
 
 				elif goals[team] > goals[other_team] + 1:
 					if(num_goal == 0):
-						goal_line.append(str(row['time']) + ':' + player + " scored in the " + str(row['time']) + ' minute to increase the lead for ' + row['event_team'] + '\n')
+						goal_line.append(str(row['time']) + ':' + player + " scored in the " + str(row['time']) + ' minute to increase the lead for ' + row['event_team'] + '.\n')
 					elif(num_goal == 2):
-						goal_line.append(str(row['time']) + ':' + player + " completed his hattrick in the " + str(row['time']) + ' minute to increase the lead for ' + row['event_team'] + '\n')
+						goal_line.append(str(row['time']) + ':' + player + " completed his hattrick in the " + str(row['time']) + ' minute to increase the lead for ' + row['event_team'] + '.\n')
 					else:
-						goal_line.append(str(row['time']) + ':' + player + " scored again in the " + str(row['time']) + ' minute to increase the lead for ' + row['event_team'] + '\n')
+						goal_line.append(str(row['time']) + ':' + player + " scored again in the " + str(row['time']) + ' minute to increase the lead for ' + row['event_team'] + '.\n')
 		
 			
 				elif goals[team] > goals[other_team]:
 					if(num_goal == 0):
-						goal_line.append(str(row['time']) + ':' + player + " scored in the " + str(row['time']) + ' minute to give ' + row['event_team'] + ' the lead\n')
+						goal_line.append(str(row['time']) + ':' + player + " scored in the " + str(row['time']) + ' minute to give ' + row['event_team'] + ' the lead.\n')
 					elif(num_goal ==2):
-						goal_line.append(str(row['time']) + ':' + player + " completed his hattrick in the " + str(row['time']) + ' minute to give ' + row['event_team'] + ' the lead\n')
+						goal_line.append(str(row['time']) + ':' + player + " completed his hattrick in the " + str(row['time']) + ' minute to give ' + row['event_team'] + ' the lead.\n')
 					else:
-						goal_line.append(str(row['time']) + ':' + player + " scored again in the " + str(row['time']) + ' minute to give ' + row['event_team'] + ' the lead\n')
+						goal_line.append(str(row['time']) + ':' + player + " scored again in the " + str(row['time']) + ' minute to give ' + row['event_team'] + ' the lead.\n')
 
 				else:
 					if(num_goal == 0):
-						goal_line.append(str(row['time']) + ':' + player + " scored in the " + str(row['time']) + ' minute\n')
+						goal_line.append(str(row['time']) + ':' + player + " scored in the " + str(row['time']) + ' minute for ' + row['event_team'] + ' to continue the fight-back.\n')
 					elif(num_goal == 2):
-						goal_line.append(str(row['time']) + ':' + player + " completed his hattrick in the " + str(row['time']) + ' minute\n')
+						goal_line.append(str(row['time']) + ':' + player + " completed his hattrick in the " + str(row['time']) + ' to continue the fight-back for ' + row['event_team'] +' .\n')
 					else:
-						goal_line.append(str(row['time']) + ':' + player + " scored again in the " + str(row['time']) + ' minute\n')
+						goal_line.append(str(row['time']) + ':' + player + " scored again in the " + str(row['time']) + ' to continue the fight-back for ' + row['event_team'] +' .\n')
 
 			if(desc_goal != ""):
 				goal_line.append(str(row['time']) + ':' + desc_goal)
@@ -463,7 +477,7 @@ def goal_scorer(match_commentary):
 			player = row['player']
 			if player != None: player = player.title()
 			else: player = ''
-			goal_line.append(str(row['time']) + ':' + "Disappointingly, " + player + " missed the penalty which " + shot_place_dict[row['shot_place']] + "\n")
+			goal_line.append(str(row['time']) + ':' + "Disappointingly, " + player + " missed the penalty.\n")
 	# print(goal_scorer)
 	return goal_line
  
@@ -536,7 +550,7 @@ def foul_details(match_info, match_commentary):
 			if(len(players_hm) + len(players_aw) == 1):
 				string += " was awarded a yellow card."
 			if(len(players_hm) + len(players_aw) > 1):
-						string += " were awarded yellow cards in a quick succesion."
+						string += " were awarded yellow cards in a quick succesion around the "+ str(period_start + period_gap) +" minute."
 			if(len(players_hm) + len(players_aw) > 0):
 				foul_string.append(str(period_start + period_gap) + ':' + string + "\n")
 			players_hm = []
@@ -579,7 +593,7 @@ def subsitutions(match_info, match_commentary):
 	players_aw_in = []
 	players_hm_out = []
 	players_aw_out = []
-
+	early_stage = 0
 	for i in range(len(subsi)+1):
 
 		if(i < len(subsi)):
@@ -597,7 +611,10 @@ def subsitutions(match_info, match_commentary):
 				
 				for i in range(len(players_hm_in)-1):
 					string += players_hm_in[i] +", "
-				string += players_hm_in[len(players_hm_in)-1] + " were substituted in for "
+				if(len(players_hm_in) > 1):	
+					string += players_hm_in[len(players_hm_in)-1] + " were substituted in for "
+				else:
+					string += players_hm_in[len(players_hm_in)-1] + " was substituted in for "
 
 				for i in range(len(players_hm_out)-1):
 					string += players_hm_out[i] +", "
@@ -618,8 +635,12 @@ def subsitutions(match_info, match_commentary):
 			
 
 			if(len(players_hm_in) + len(players_aw_in) > 0):
-				if(period_start < 30):
+				if(period_start < 30 and early_stage ==0):
+					early_stage += 1
 					string += " in the early stages of the match."
+				elif(period_start < 30):
+					# string += "" in the "+ str(event[0]) +" minute of the match."	
+					string += ""
 				if(period_start + period_gap > 75 ):	
 					string += " in the last few minutes of the match."
 
