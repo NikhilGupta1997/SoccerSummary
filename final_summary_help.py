@@ -53,8 +53,13 @@ subsitutions_home_in = []
 subsitutions_home_out = []
 subsitutions_away_in = []
 subsitutions_away_out = []
+red_home = 0
+red_away = 0
+max_home_deficit = 0
+max_away_deficit = 0
 
 def stats(match_commentary, match_info):
+	global red_away, red_home, max_home_deficit, max_away_deficit
 	global goals_home
 	global goals_away
 	global yellow_cards_home
@@ -74,18 +79,36 @@ def stats(match_commentary, match_info):
 
 	home_team = match_info['ht']
 	away_team = match_info['at']
+	home_score = 0 
+	away_score = 0 
 	
 	for event in match_commentary:
 		player = event['player']
 		if player != None: player = player.title()
 		else: player = ''
+
+		if(event['event_type'] == 5 or event['event_type'] == 6):
+			if(event['event_team'] == home_team):
+				red_home += 1
+			else:
+				red_away += 1	
+
 		if event['is_goal']:
 			
+
 			if(event['event_team'] == home_team):
+				home_score += 1
+				if((home_score- away_score) > max_away_deficit):
+					max_away_deficit = home_score - away_score
+
 				if(player not in goals_home):
 					goals_home[player] = []
 				goals_home[player].append(event['time'])
 			else:
+				away_score += 1
+				if((away_score - home_score) > max_home_deficit):
+					max_home_deficit = away_score - home_score
+
 				if(player not in goals_away):
 					goals_away[player] = []
 				# print player	
@@ -143,9 +166,16 @@ def start_line(match_info, match_commentary):
 	# TODO : Add features like <players winner/hattrick inspires late comeback etc>. This can include brace, or if keeper does too many saves etc
 	# High scoring match
 	(win, odds) = winner(match_info)
-	start_str = str(0) + ':' + match_info['ht'] + ' ' 
+	
+	home_num = 11 - red_home
+	away_num = 11 - red_away
 
-	if(odds > 2):
+	if(home_num == 11):
+		start_str = str(0) + ':' + match_info['ht'] + ' ' 
+	else:
+		start_str = str(0) + ':' + str(home_num) + " man "+ match_info['ht'] + ' ' 
+
+	if(odds > 2 and (home_num + away_num) == 22):
 		start_str += 'unexpectedly '
 
 	if(win == 0):
@@ -154,16 +184,65 @@ def start_line(match_info, match_commentary):
 		start_str += 'drew with '
 	else:
 		start_str += 'lost to '
-
+	if(away_num != 11):
+		start_str += str(away_num) + ' man '
 	start_str += match_info['at'] + ' '
+
 	start_str += str(match_info['fthg']) + '-'+ str(match_info['ftag']) + ' at their home ground'
-	if(match_info['fthg'] + match_info['ftag'] >= 5):
-		start_str += " in a high-scoring contest"
-	elif(match_info['fthg'] + match_info['ftag'] == 0):
+	
+	if(match_info['fthg'] + match_info['ftag'] == 0):
 		start_str += " in a dull draw"
 	elif(abs(match_info['fthg'] - match_info['ftag']) > 3):
 		start_str += " in an one-sided contest"
-	start_str += "\n"	
+	elif(match_info['fthg'] + match_info['ftag'] >= 5):
+		start_str += " in a high-scoring contest"
+	start_str += ". "
+
+	hattrick = []
+	brace = []
+
+	# Star of the show , who scored the winner, comeback or not
+	for key, value in goals_home.iteritems():
+		if(len(value) >= 3):
+			hattrick.append((key, 0))
+		elif (len(value) == 2):
+			brace.append((key, 0))				
+	for key, value in goals_away.iteritems():
+		if(len(value) >= 3):
+			hattrick.append((key, 1))
+		elif (len(value) == 2):
+			brace.append((key, 1))				
+
+	if(len(hattrick) > 0):
+		for i in range(len(hattrick) - 1):
+			(player, team) = hattrick[i]
+			start_str += player +", "
+		start_str += hattrick[len(hattrick) - 1][0] + " scored hattrick"
+
+	elif(len(brace) > 0):
+		for i in range(len(brace) - 1):
+			(player, team) = brace[i]
+			start_str += player +", "
+		start_str += brace[len(brace) - 1][0] + " scored a brace"
+
+	result = "win"
+	if(win == 1):
+		result ="draw"
+	if((win == 0 or win == 1) and max_home_deficit > 0):
+		if(len(brace) + len(hattrick) > 0):
+			if(max_home_deficit == 1):
+				start_str += " as "+ match_info['ht'] +" came back from a goal down to "+ result + " the match" 
+			else:
+				start_str += " as "+ match_info['ht'] +" came back from "+ str(max_home_deficit) +" goals down to "+ result + " the match" 
+	if((win == 2 or win == 1) and max_away_deficit > 0):
+		if(len(brace) + len(hattrick) > 0):
+			if(max_away_deficit == 1):
+				start_str += " as "+ match_info['at'] +" came back from a goal down to "+ result + " the match" 
+			else:
+				start_str += " as "+ match_info['at'] +" came back from "+ str(max_away_deficit) +" goals down to "+ result + " the match" 
+
+	start_str += ".\n"	
+
 	return [start_str]
 
 def find_dominance(match_info, match_commentary):
@@ -672,4 +751,6 @@ def summarize(timeline):
 	text = ""
 	for row in timeline:
 		text = text + row[1].rstrip('\n') + ' . '
+		# text = text + str(row[0]) + " => " + row[1]
+		# text = text + row[1]
 	return text
