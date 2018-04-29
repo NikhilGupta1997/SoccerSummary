@@ -37,6 +37,8 @@ timeline += final_summary_help.find_dominance(match_info, match_commentary)
 timeline += final_summary_help.goal_scorer(match_commentary)
 timeline += final_summary_help.foul_details(match_info, match_commentary)
 timeline += final_summary_help.subsitutions(match_info, match_commentary)
+timeline += final_summary_help.attempts(match_info, match_commentary)
+
 timeline = final_summary_help.sort_time(timeline)
 print(final_summary_help.summarize(timeline))
 print("Summarization Over")

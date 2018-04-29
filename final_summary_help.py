@@ -139,6 +139,40 @@ def stats(match_commentary, match_info):
 				subsitutions_away_in.append(player_in)
 				subsitutions_away_out.append(player_out)
 
+def attempts(match_info, match_commentary):
+
+	hgoals = int(match_info['fthg']) 
+	agoals = int(match_info['ftag'])
+
+	home_team = match_info['ht']
+	away_team = match_info['at']
+	home_attempts = []
+	away_attempts = []
+	attempt = []
+	for event in match_commentary:
+		event_type = event['event_type']
+		shot_outcome = event['shot_outcome']
+		open_play = event['situation']
+		player = event['player']
+		if(event_type != 1):
+			continue
+		if(shot_outcome == 4):
+			string = event['event_team'] + " came close to scoring in the "+ str(event['time'])  +" minute as " + player + "'s effort hit the bar"
+			if(open_play == 4):
+				string += " through a direct free-kick"		
+			attempt.append(str(event['time']) + ': ' + string +".\n")
+		elif(hgoals == 0 and event['event_team'] == home_team):
+			if(shot_outcome == 3):
+				string = event['event_team'] + " missed an opportunity to score in the "+ str(event['time'])  +" minute as " + player + "'s effort was blocked"
+				attempt.append(str(event['time']) + ': ' + string +".\n")
+		elif(agoals == 0 and event['event_team'] == away_team):
+			if(shot_outcome == 3):
+				string = event['event_team'] + " got a chance to score in the "+ str(event['time'])  +" minute as " + player + "'s effort was blocked"
+				attempt.append(str(event['time']) + ': ' + string +".\n")				
+	return attempt		
+
+			
+
 def winner(match_info):
 	win = 1 
 	expect = 0 
@@ -332,7 +366,7 @@ def find_dominance(match_info, match_commentary):
 				away_attacks_count += 1	
 
 	flag = False	
-	max_i = 0
+	max_i = -1
 	for i in range(len(ans)):
 		event = ans[i]
 		ev_str = ""
@@ -340,7 +374,8 @@ def find_dominance(match_info, match_commentary):
 		if i < max_i:
 			# flag = False
 			continue
-		
+		f_str = "started"
+		# if()
 		if(event[2] == 0):
 			if(event[0] < 0):
 				dominance_string.append(str(event[1]) + ': ' + home_team + ' started to attack and dominated the possession but ' + away_team + 'scored against the run of play as ')
@@ -368,7 +403,7 @@ def find_dominance(match_info, match_commentary):
 		max_i = i
 		while(max_i+1 < len(ans) and ans[max_i+1][2] == ans[max_i][2]):
 			max_i += 1
-
+		max_i += 1
 	return dominance_string
 
 def toggle(team):
@@ -404,7 +439,6 @@ def goal_desc(player, shot_place, shot_outcome, location, bodypart, situation, a
 		goal += ' Embarassingly , it was an unlucky own goal'
 	else:
 		# TODO : add headed the ball etc, add synonyms for capitalised
-		print (goal_count % 3)
 		if(goal_count % 3 == 0):
 			if(bodypart != 3):
 				goal += player + " capitalised with his " + bodypart_dict[bodypart] + " to send the ball into the " + shot_place_dict[shot_place]
@@ -453,7 +487,6 @@ def goal_scorer(match_commentary):
 	eq_num = [0,0]
 	for row in match_commentary:
 		if row['is_goal']:
-			# print row['side'], row['player'], row['time'], row['event_type'], row['event_type2']
 			team = int(row['side']) - 1
 			goals[team] += 1
 			other_team = toggle(team)
@@ -474,10 +507,7 @@ def goal_scorer(match_commentary):
 			situation = row['situation']
 			if(int(row['event_type2']) == 15):
 				situation = -1
-			# print situation
-			# if(shot_place == -1):
-			# 	goal_line.append(str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation))
-			# 	continue
+			
 			desc_goal = description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation)
 			num_goal = goal_num(player, row['time'], team)
 			
@@ -616,7 +646,18 @@ def foul_details(match_info, match_commentary):
 		elif event_type == 6:
 			foul_string.append(str(event['time']) + ': ' + player + " was given a red card and left " + team + " with a " +  str(num) + " man side in the "+ str(event['time']) + " minute of the match.\n")
 		elif event_type == 11:
-			foul_string.append(str(event['time']) + ': ' + re.sub('(.*?)', '', event['text']) + ".\n")
+			if(re.match('Penalty conceded', event['text']) != None):
+				tokens = event['text'].split()
+				tokens.insert(1, 'was')
+				string =  " In the " + str(event['time']) + " minute, " + " ".join(tokens) + "\n"
+				foul_string.append(str(event['time']) + ': ' + string)
+			else:
+				tokens = event['text'].split()
+				tokens = tokens[-8:]
+				tokens[1] = 'drew'
+				tokens[7] = 'area'
+				string =  " In the " + str(event['time']) + " minute, " + " ".join(tokens) + " to win a penalty for "+ event['event_team'] +" .\n"	
+				foul_string.append(str(event['time']) + ': ' + string)
 
 	period_gap = 15
 	period_start = 0
@@ -639,19 +680,19 @@ def foul_details(match_info, match_commentary):
 			if(len(players_hm) > 0):
 				for i in range(len(players_hm)-1):
 					string += players_hm[i] +", "
-				string += players_hm[len(players_hm)-1] + " ( "+ home_team +" ) "
+				string += players_hm[len(players_hm)-1] + " ("+ home_team +") "
 				if(len(players_aw) > 0):
 					string += ", "
 			if(len(players_aw) > 0):
 				for i in range(len(players_aw)-1):
 					string += players_aw[i] +", "
-				string += players_aw[len(players_aw)-1] + " ( "+ away_team +" ) "
+				string += players_aw[len(players_aw)-1] + " ("+ away_team +") "
 			if(len(players_hm) + len(players_aw) == 1):
 				string += " was awarded a yellow card"
 			if(len(players_hm) + len(players_aw) > 1):
 						string += " were awarded yellow cards in a quick succesion around the "+ str(period_start + period_gap) +" minute"
-			if(len(players_hm) + len(players_aw) > 0):
-				foul_string.append(str(period_start + period_gap) + ': ' + string + ".\n")
+			# if(len(players_hm) + len(players_aw) > 0):
+			# 	foul_string.append(str(period_start + period_gap) + ': ' + string + ".\n")
 			players_hm = []
 			players_aw = []
 			period_start += period_gap
@@ -717,7 +758,7 @@ def subsitutions(match_info, match_commentary):
 
 				for i in range(len(players_hm_out)-1):
 					string += players_hm_out[i] +", "
-				string += players_hm_out[len(players_hm_out)-1] + " ( "+ home_team +" ) "
+				string += players_hm_out[len(players_hm_out)-1] + " ("+ home_team +") "
 
 				if(len(players_aw_in) > 0):
 					string += " while "
@@ -730,7 +771,7 @@ def subsitutions(match_info, match_commentary):
 
 				for i in range(len(players_aw_out)-1):
 					string += players_aw_out[i] +", "
-				string += players_aw_out[len(players_aw_out)-1] + " ( "+ away_team +" ) "
+				string += players_aw_out[len(players_aw_out)-1] + " ("+ away_team +") "
 			
 
 			if(len(players_hm_in) + len(players_aw_in) > 0):
