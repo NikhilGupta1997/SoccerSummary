@@ -84,7 +84,7 @@ def start_line(match_info, match_commentary):
 		start_str += 'lost to '
 
 	start_str += match_info['at'] + ' '
-	start_str += str(match_info['fthg']) + '-'+ str(match_info['ftag']) + ' at their home ground.\n'
+	start_str += str(match_info['fthg']) + '-'+ str(match_info['ftag']) + ' at their home ground\n'
 	return [start_str]
 
 def find_dominance(match_info, match_commentary):
@@ -134,13 +134,13 @@ def check_equal(goals):
 def assist_desc(player2, assist_method):
 	assist = ""
 	if assist_method == 1:
-		assist += "A great assist provided by " + player2 + " with a pass."
+		assist += "A great assist provided by " + player2 + " with a pass"
 	elif assist_method == 2:
-		assist += "A brilliant assist provided by " + player2 + " with a great cross into the box."
+		assist += "A brilliant assist provided by " + player2 + " with a great cross into the box"
 	elif assist_method == 3:
-		assist += "A great assist provided by " + player2 + " with a headed pass."
+		assist += "A great assist provided by " + player2 + " with a headed pass"
 	elif assist_method == 4:
-		assist += "A brilliant assist provided by " + player2 + " with a perfectly placed through ball into the box."
+		assist += "A brilliant assist provided by " + player2 + " with a perfectly placed through ball into the box"
 	return assist
 
 def goal_desc(player, shot_place, shot_outcome, location, bodypart, situation):
@@ -150,7 +150,7 @@ def goal_desc(player, shot_place, shot_outcome, location, bodypart, situation):
 	elif situation == 4:
 		goal += "The free kick was converted! "
 	if shot_place == -1:
-		goal += 'Embarassingly, ' + player + ' scored an unlucky own goal'
+		goal += 'Embarassingly , ' + player + ' scored an unlucky own goal'
 	else:
 		goal += player + " took the shot from " + location_dict[location] + " with his " + bodypart_dict[bodypart] + " and sent the ball flying into the " + shot_place_dict[shot_place]
 	return goal
@@ -194,7 +194,7 @@ def goal_scorer(match_commentary):
 					goal_line.append(str(row['time']) + ':' + player + " scored an quick goal to give " + row['event_team'] + " an early lead\n")
 					goal_line.append(str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation))
 				elif equilizer:
-					goal_line.append(str(row['time']) + ':' + player + " replied swiftly and strongly to get " + row['event_team'] + " the equilizer\n")
+					goal_line.append(str(row['time']) + ':' + player + " replied swiftly and strongly to get " + row['event_team'] + " the equilizer in the" + str(row['time']) + " minute\n")
 					goal_line.append(str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation))
 			elif row['time'] > 80:
 				if goals[team] > goals[other_team] + 1:
@@ -211,7 +211,7 @@ def goal_scorer(match_commentary):
 					goal_line.append(str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation))
 			else:
 				if equilizer:
-					goal_line.append(str(row['time']) + ':' + player + " replied strongly to get " + row['event_team'] + " the much needed equilizer\n")
+					goal_line.append(str(row['time']) + ':' + player + " replied strongly to get " + row['event_team'] + " the much needed equilizer in the " + str(row['time']) + " minute\n")
 					goal_line.append(str(row['time']) + ':' + description(player, player2, shot_place, shot_outcome, location, bodypart, assist_method, situation))
 				elif goals[team] > goals[other_team] + 1:
 					goal_line.append(str(row['time']) + ':' + player + " scored a goal in the " + str(row['time']) + ' minute to give ' + row['event_team'] + ' a fortified lead\n')
@@ -253,13 +253,13 @@ def foul_details(match_commentary):
 		else: player2 = ''
 		team = event['event_team']
 		if event_type == 4:
-			foul_string.append(str(event['time']) + ':' + player + " was given a yellow card\n")
+			foul_string.append(str(event['time']) + ':' + player + ' ( ' + team + ' ) ' + " was given a yellow card\n")
 		elif event_type == 5:
-			foul_string.append(str(event['time']) + ':' + player + " was given a second yellow card and was a big blow to " + team + "\n")
+			foul_string.append(str(event['time']) + ':' + player + ' ( ' + team + ' ) ' + " was given a second yellow card and was a big blow to " + team + "\n")
 		elif event_type == 6:
-			foul_string.append(str(event['time']) + ':' + player + " was given a red card and left " + team + " with a 10 man side\n")
+			foul_string.append(str(event['time']) + ':' + player + ' ( ' + team + ' ) ' + " was given a red card and left " + team + " with a 10 man side\n")
 		elif event_type == 11:
-			foul_string.append(str(event['time']) + ':' + re.sub('(.*?)', '', event['text']) + "\n")
+			foul_string.append(str(event['time']) + ':' + re.sub('(.*?)', ' ( ' + team + ' ) ', event['text']) + "\n")
 	return foul_string
 
 def subsitutions(match_commentary):
@@ -272,8 +272,9 @@ def subsitutions(match_commentary):
 		player_out = event['player_out']
 		if player_out != None: player_out = player_out.title()
 		else: player_out = ''
+		team = event['event_team']
 		if event_type == 7:
-			subs.append(str(event['time']) + ':' + player_in + " was substituted in place of " + player_out + "\n")
+			subs.append(str(event['time']) + ':' + player_in + " was substituted in place of " + player_out + ' ( ' + team + " )\n")
 	return subs
 
 def sort_time(timeline):

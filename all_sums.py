@@ -50,19 +50,18 @@ def final_run(match_info, match_commentary):
 
 match_ids = get_match_ids()
 for i, mid in enumerate(match_ids):
-	print i, mid['id_odsp']
-	if i < 100:
-		continue
+	print(i, mid['id_odsp'])
 	match_info, match_commentary = get_match_info(mid['id_odsp'])
 	if len(match_commentary) == 0:
 		continue
-	text = run(match_info, match_commentary)
-	final_text = final_run(match_info, match_commentary)
-	# text = text.decode('utf-8', 'ignore')
-	# final_text = final_text.decode('utf-8', 'ignore')
-	with open('summaries/' + str(i) + '.summ', 'w') as f:
+	print('hi')
+	text = run(match_info, match_commentary).encode('utf8')
+	print('hiney')
+	final_text = final_run(match_info, match_commentary).encode('utf8')
+	print('gaswala')
+	with open('summaries/' + str(i) + '.summ', 'wb') as f:
 		f.write(text)
-		f.write('\n@highlight\n')
+		f.write('\n@highlight\n'.encode('utf8'))
 		f.write(final_text)
 	if i % 10 == 8:
 		file = 'all_val.txt'
