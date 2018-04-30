@@ -230,6 +230,7 @@ def start_line(match_info, match_commentary):
 		start_str += " in an one-sided contest"
 	elif(match_info['fthg'] + match_info['ftag'] >= 5):
 		start_str += " in a high-scoring contest"
+	start_str += '. '
 	hattrick = []
 	brace = []
 
@@ -810,10 +811,10 @@ def summarize(timeline):
 	text = ""
 	for row in timeline:
 		text = text + row[1].rstrip('\n') + ' : '
-	return 
+	return text
 
 def period_summarize(timeline):
 	text = ""
 	for row in timeline:
 		text = text + row[1].rstrip('\n') + '. '
-	return 
+	return text
