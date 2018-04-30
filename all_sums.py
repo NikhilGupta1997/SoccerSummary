@@ -54,11 +54,8 @@ for i, mid in enumerate(match_ids):
 	match_info, match_commentary = get_match_info(mid['id_odsp'])
 	if len(match_commentary) == 0:
 		continue
-	print('hi')
 	text = run(match_info, match_commentary).encode('utf8')
-	print('hiney')
 	final_text = final_run(match_info, match_commentary).encode('utf8')
-	print('gaswala')
 	with open('summaries/' + str(i) + '.summ', 'wb') as f:
 		f.write(text)
 		f.write('\n@highlight\n'.encode('utf8'))

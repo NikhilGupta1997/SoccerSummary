@@ -259,7 +259,7 @@ def foul_details(match_commentary):
 		elif event_type == 6:
 			foul_string.append(str(event['time']) + ':' + player + ' ( ' + team + ' ) ' + " was given a red card and left " + team + " with a 10 man side\n")
 		elif event_type == 11:
-			foul_string.append(str(event['time']) + ':' + re.sub('(.*?)', ' ( ' + team + ' ) ', event['text']) + "\n")
+			foul_string.append(str(event['time']) + ':' + re.sub('(.*?)', '', event['text']) + "\n")
 	return foul_string
 
 def subsitutions(match_commentary):
